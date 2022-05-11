@@ -21,7 +21,8 @@ export const createWebsocketServer = (server) => {
 export const sendCurrentData = async () => {
   const data = {
     url: 'https://foo.cz',
-    freshData: [1, 2, 4, 5],
+    download: [{'4kb': 120}, {'64mb': 50}],
+    upload: [{'8kb': 14}, {'1b': 15}, {'2b': 29}, {'4b': 30}, {'8b': 31}, {'16b': 32}, {'32b': 33}, {'64b': 34}, {'128b': 35}, ],
   }
 
   const jsonData = JSON.stringify(data);

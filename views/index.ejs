@@ -4,23 +4,110 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title><%= title %></title>
 </head>
 <body>
 <h1><%= title %></h1>
 
 <p>what is the speed?</p>
-</body>
+
+<form method="post">
+    <input type="url" name="formUrl">
+    <input type="submit" value="Submit">
+</form>
+
+<div style="max-height: 100px">
+    <h2>Realtime Graph</h2>
+    <canvas id="myChart"></canvas>
+</div>
 
 <script>
+  const generateRange = (numberOfColumns) => {
+    const range = []
+
+    for (const x of Array(numberOfColumns).keys()) {
+      const val = Math.pow(2, x)
+      if (x >= 20) {
+        range.push(val / 1024 / 1024 + ' mB')
+      } else if (x >= 10) {
+        range.push(val / 1024 + ' kB')
+      } else {
+        range.push(val + ' B')
+      }
+    }
+
+    return range
+  }
+
+
+  const ctx = document.getElementById('myChart');
+  const myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: generateRange(27),
+      datasets: [
+        {
+          label: 'download',
+          data: [],
+          backgroundColor: ['blue'],
+        }, {
+          label: 'upload',
+          data: [],
+          backgroundColor: ['green'],
+        }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
   const ws = new WebSocket('ws://localhost:3000');
 
   ws.addEventListener('message', (message) => {
     const messageData = JSON.parse(message.data)
 
-    if (messageData.type === 'theUrl') {
-      document.getElementById('blab la').innerHTML = messageData.freshData;
+    // if (messageData.type === 'theUrl') {
+
+    const extractDataIndex = (labelName) => {
+      const lastTwoChars = labelName.slice(-2)
+      const number = Number(labelName.match(/\d+/)[0])
+      let index = Math.log2(number)
+
+      if (lastTwoChars === 'kb') {
+        index += 10;
+      } else if (lastTwoChars === 'mb') {
+        index += 20;
+      }
+
+      return index
     }
+
+    const processStackData = (stackArray, datasetIndex) => {
+      stackArray.forEach((item) => {
+        for (const [label, value] of Object.entries(item)) {
+          const dataIndex = extractDataIndex(label);
+          console.log('data indes', dataIndex)
+          myChart.data.datasets[datasetIndex].data[dataIndex] = value
+        }
+      })
+    }
+
+    if (messageData.download) {
+      processStackData(messageData.download, 0)
+    }
+
+    if (messageData.upload) {
+      processStackData(messageData.upload, 1)
+    }
+
+    myChart.update();
+    // }
   });
 </script>
+</body>
 </html>

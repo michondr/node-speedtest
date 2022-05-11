@@ -1,4 +1,5 @@
-;import express from 'express'
+import express from 'express'
+import { sendCurrentData } from "./websockets.js";
 
 export const app = express()
 
@@ -8,17 +9,27 @@ app.use(express.static('public'))
 app.use(express.urlencoded({extended: true}))
 
 app.get('/', async (req, res) => {
-  const todos = []
-
   res.render('index', {
     title: 'What is your speed?',
-    todos,
   })
 })
 
-app.use((req, res) => {
-  console.log('404', req.method, req.url)
+app.post('/', async (req, res) => {
+  const url = req.body.formUrl;
 
-  res.render('404')
+  res.render('index', {
+    title: `What is the speed of ${url}`,
+  })
+})
+
+app.get('/data', async (req, res, next) => {
+  sendCurrentData()
+
+  res.end()
+})
+
+app.use((req, res) => {
+  res.status(404)
+  res.send()
 })
 
