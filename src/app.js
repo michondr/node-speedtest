@@ -16,9 +16,11 @@ app.get('/', async (req, res) => {
 
 app.get('/download/:bytesLength', async (req, res) => {
 
-  const data = crypto.randomBytes(
-    Number(req.params.bytesLength),
-  )
+  // const data = crypto.randomBytes(
+  //   Number(req.params.bytesLength),
+  // )
+
+  const data = Buffer.alloc(Number(req.params.bytesLength));
 
   res.send(data)
   res.end()

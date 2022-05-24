@@ -53,7 +53,8 @@ const callForUploadSpeed = async (powerOfTwoSize) => {
 
   const response = await fetch(`${process.env.TARGET}/upload`, {
     method: 'post',
-    body: crypto.randomBytes(bytesLength),
+    // body: crypto.randomBytes(bytesLength),
+    body: Buffer.alloc(bytesLength),
     headers: {'Content-Type': 'application/octet-stream'},
   });
 
