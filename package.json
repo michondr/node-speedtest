@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "pm2": "pm2",
+    "start": "pm2 start ecosystem.config.cjs",
+    "stop": "pm2 stop ecosystem.config.cjs",
     "dev": "nodemon index.js",
     "test": "ava"
   },
@@ -21,8 +23,11 @@
   "homepage": "https://github.com/michondr/speedtest#readme",
   "dependencies": {
     "chart.js": "^3.7.1",
+    "dotenv": "^16.0.1",
     "ejs": "^3.1.6",
     "express": "^4.17.3",
+    "node-fetch": "^3.2.4",
+    "pm2": "^5.2.0",
     "ws": "^8.6.0"
   },
   "devDependencies": {

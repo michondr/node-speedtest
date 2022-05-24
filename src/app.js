@@ -1,39 +1,34 @@
+import 'dotenv/config'
 import express from 'express'
-import { sendCurrentData } from "./websockets.js";
+import crypto from 'crypto'
 
 export const app = express()
 
+app.locals.appUrl = process.env.APP_URL
 app.set('view engine', 'ejs')
 
-app.use(express.static('public'))
-app.use(express.urlencoded({extended: true}))
-
 app.get('/', async (req, res) => {
-  const asd = 'das' //TODO: target url
-
   res.render('index', {
-    title: `What is your speed to ${asd} ?`,
+    title: `What is your speed to ${process.env.TARGET} ?`,
     sliderCurrentFileSize: 10,
   })
 })
 
-app.post('/', async (req, res) => {
-  const maxSizePowerOf2 = req.body.maxFileSize;
+app.get('/download/:bytesLength', async (req, res) => {
 
-  console.log(maxSizePowerOf2)
+  const data = crypto.randomBytes(
+    Number(req.params.bytesLength),
+  )
 
-  res.render('index', {
-    title: `What is the speed?`,
-    sliderCurrentFileSize: maxSizePowerOf2,
-  })
+  res.send(data)
+  res.end()
 })
 
-app.get('/data', async (req, res) => {
+app.post('/upload', express.raw({limit: '1gb'}), async (req, res) => {
 
+  const bitesReceived = req.body.length / 8
 
-  sendCurrentData()
-
-  res.end()
+  res.send({bitesReceived})
 })
 
 app.use((req, res) => {

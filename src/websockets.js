@@ -1,4 +1,5 @@
 import { WebSocketServer } from "ws";
+import { runSpeedTest } from "./packetData.js";
 
 /** @type {Set<WebSocket>} */
 const connections = new Set()
@@ -7,22 +8,40 @@ export const createWebsocketServer = (server) => {
   const wss = new WebSocketServer({server});
 
   wss.on('connection', (ws) => {
-    console.log('created, size: ', connections.size)
     connections.add(ws)
+    // console.log('created, size: ', connections.size)
 
     ws.on('close', () => {
-      console.log('closed, size: ', connections.size)
       connections.delete(ws)
+      // console.log('closed, size: ', connections.size)
     })
+
+    ws.on('message', async (data) => {
+      await runSpeedTest(JSON.parse(data))
+    });
 
   });
 }
 
-export const sendCurrentData = async () => {
+const powerOfTwoToName = (powerOfTwo) => {
+
+  let number = Math.pow(2, powerOfTwo)
+
+  if (powerOfTwo > 20) {
+    return (number / 1024 / 1024 + 'mb')
+  } else if (powerOfTwo > 10) {
+    return (number / 1024 + 'kb')
+  } else {
+    return (number + 'b')
+  }
+}
+
+export const sendDownload = async (powerOfTwo, mbps, latencyMiliseconds) => {
   const data = {
-    url: 'https://foo.cz',
-    download: [{'4kb': 120}, {'64mb': 50}],
-    upload: [{'8kb': 14}, {'1b': 15}, {'2b': 29}, {'4b': 30}, {'8b': 31}, {'16b': 32}, {'32b': 33}, {'64b': 34}, {'128b': 35}, ],
+    type: 'download',
+    field: powerOfTwoToName(powerOfTwo),
+    value: mbps,
+    latency: latencyMiliseconds,
   }
 
   const jsonData = JSON.stringify(data);
@@ -31,3 +50,19 @@ export const sendCurrentData = async () => {
     connection.send(jsonData)
   }
 }
+
+export const sendUpload = async (powerOfTwo, upload, latencyMiliseconds) => {
+  const data = {
+    type: 'upload',
+    field: powerOfTwoToName(powerOfTwo),
+    value: upload,
+    latency: latencyMiliseconds,
+  }
+
+  const jsonData = JSON.stringify(data);
+
+  for (const connection of connections) {
+    connection.send(jsonData)
+  }
+}
+

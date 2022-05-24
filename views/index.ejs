@@ -10,30 +10,38 @@
 <body>
 <h1><%= title %></h1>
 
-<p>what is the speed?</p>
-
-<form method="post">
-    <input type="range" id="maxFileSize" name="maxFileSize"
-           min="0" max="27" value="<%= sliderCurrentFileSize %>">
-    <label for="volume" id="maxFileSizeLabel"><%= sliderCurrentFileSize %> B</label>
-
-    <input type="submit" value="Submit">
+<form action="">
+    <input type="range" id="maxFileSize" min="0" max="30" value="<%= sliderCurrentFileSize %>">
+    <label for="maxFileSize" id="maxFileSizeLabel"><%= sliderCurrentFileSize %> B</label>
+    <br>
+    <br>
+    <input type="checkbox" id="useAwait">
+    <label for="useAwait">Should use await?</label>
+    <br>
+    <br>
+    <input type="button" value="Submit" onclick="callSpeed();return false;">
 </form>
 
 <div>
-    <h2>Realtime Graph</h2>
-    <canvas id="myChart"></canvas>
+    <h2>Mbps Graph</h2>
+    <canvas id="speedChart"></canvas>
+</div>
+<div>
+    <h2>ms latency Graph</h2>
+    <canvas id="latencyChart"></canvas>
 </div>
 
 <script>
+
+
   const generateRange = (numberOfColumns) => {
     const range = ['1 B']
 
     for (const x of Array(numberOfColumns).keys()) {
       const val = Math.pow(2, x + 1)
-      if (x > 20) {
+      if (x >= 20) {
         range.push(val / 1024 / 1024 + ' mB')
-      } else if (x > 10) {
+      } else if (x >= 10) {
         range.push(val / 1024 + ' kB')
       } else {
         range.push(val + ' B')
@@ -57,18 +65,36 @@
     return index
   }
 
-  const processStackData = (stackArray, datasetIndex) => {
-    stackArray.forEach((item) => {
-      for (const [label, value] of Object.entries(item)) {
-        const dataIndex = extractDataIndex(label);
-        console.log('data indes', dataIndex)
-        myChart.data.datasets[datasetIndex].data[dataIndex] = value
-      }
-    })
+  const processStackData = (field, value, latency, datasetIndex) => {
+    const dataIndex = extractDataIndex(field);
+    speedChart.data.datasets[datasetIndex].data[dataIndex] = value
+    latencyChart.data.datasets[datasetIndex].data[dataIndex] = latency
   }
 
-  const ctx = document.getElementById('myChart');
-  const myChart = new Chart(ctx, {
+  const speedChart = new Chart(document.getElementById('speedChart'), {
+    type: 'bar',
+    data: {
+      labels: generateRange(<%= sliderCurrentFileSize %>),
+      datasets: [
+        {
+          label: 'download',
+          data: [],
+          backgroundColor: ['blue'],
+        }, {
+          label: 'upload',
+          data: [],
+          backgroundColor: ['green'],
+        }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+  const latencyChart = new Chart(document.getElementById('latencyChart'), {
     type: 'bar',
     data: {
       labels: generateRange(<%= sliderCurrentFileSize %>),
@@ -92,24 +118,43 @@
     }
   });
 
-  const ws = new WebSocket('ws://localhost:3000');
+  const ws = new WebSocket('ws://<%= appUrl %>');
 
   ws.addEventListener('message', (message) => {
     const messageData = JSON.parse(message.data)
 
-    // if (messageData.type === 'theUrl') {
-    if (messageData.download) {
-      processStackData(messageData.download, 0)
+    console.log(messageData)
+
+    if (messageData.type === 'download') {
+      processStackData(messageData.field, messageData.value, messageData.latency, 0)
     }
 
-    if (messageData.upload) {
-      processStackData(messageData.upload, 1)
+    if (messageData.type === 'upload') {
+      processStackData(messageData.field, messageData.value, messageData.latency, 1)
     }
 
-    myChart.update();
-    // }
+    speedChart.update();
+    latencyChart.update();
   });
 
+
+  const callSpeed = () => {
+    speedChart.data.datasets[0].data = []
+    speedChart.data.datasets[1].data = []
+    speedChart.update()
+
+    latencyChart.data.datasets[0].data = []
+    latencyChart.data.datasets[1].data = []
+    latencyChart.update()
+
+    // const http = new XMLHttpRequest();
+    // http.open("POST", "/run");
+    // http.setRequestHeader("Content-type", "application/json")
+    ws.send(JSON.stringify({
+      maxFileSize: document.getElementById('maxFileSize').value,
+      useAwait: document.getElementById('useAwait').checked
+    }));
+  }
 
   const slider = document.getElementById('maxFileSize');
   const label = document.getElementById('maxFileSizeLabel');
@@ -119,8 +164,20 @@
     const generatedRange = generateRange(inputValue);
 
     label.innerHTML = generatedRange.slice(-1)[0];
-    myChart.data.labels = generatedRange
-    myChart.update()
+
+    speedChart.data.labels = generatedRange
+    latencyChart.data.labels = generatedRange
+
+    for (let i = inputValue; i < 30; i++) {
+      speedChart.data.datasets[0].data[i + 1] = 0
+      speedChart.data.datasets[1].data[i + 1] = 0
+
+      latencyChart.data.datasets[0].data[i + 1] = 0
+      latencyChart.data.datasets[1].data[i + 1] = 0
+    }
+
+    speedChart.update()
+    latencyChart.update()
   }
   slider.addEventListener('input', inputHandler);
   window.addEventListener('load', inputHandler);
