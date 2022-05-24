@@ -71,52 +71,33 @@
     latencyChart.data.datasets[datasetIndex].data[dataIndex] = latency
   }
 
-  const speedChart = new Chart(document.getElementById('speedChart'), {
-    type: 'bar',
-    data: {
-      labels: generateRange(<%= sliderCurrentFileSize %>),
-      datasets: [
-        {
-          label: 'download',
-          data: [],
-          backgroundColor: ['blue'],
-        }, {
-          label: 'upload',
-          data: [],
-          backgroundColor: ['green'],
-        }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
+  const newChart = (element) =>
+    new Chart(element, {
+      type: 'bar',
+      data: {
+        labels: generateRange(<%= sliderCurrentFileSize %>),
+        datasets: [
+          {
+            label: 'download',
+            data: [],
+            backgroundColor: ['blue'],
+          }, {
+            label: 'upload',
+            data: [],
+            backgroundColor: ['green'],
+          }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
         }
       }
-    }
-  });
-  const latencyChart = new Chart(document.getElementById('latencyChart'), {
-    type: 'bar',
-    data: {
-      labels: generateRange(<%= sliderCurrentFileSize %>),
-      datasets: [
-        {
-          label: 'download',
-          data: [],
-          backgroundColor: ['blue'],
-        }, {
-          label: 'upload',
-          data: [],
-          backgroundColor: ['green'],
-        }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
+    });
+
+  const speedChart = newChart(document.getElementById('speedChart'))
+  const latencyChart = newChart(document.getElementById('latencyChart'))
 
   const ws = new WebSocket('ws://<%= appUrl %>');
 
@@ -147,9 +128,6 @@
     latencyChart.data.datasets[1].data = []
     latencyChart.update()
 
-    // const http = new XMLHttpRequest();
-    // http.open("POST", "/run");
-    // http.setRequestHeader("Content-type", "application/json")
     ws.send(JSON.stringify({
       maxFileSize: document.getElementById('maxFileSize').value,
       useAwait: document.getElementById('useAwait').checked
